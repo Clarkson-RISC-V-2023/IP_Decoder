@@ -2,7 +2,7 @@ module decoder #(
     // Parameters
     parameter ALUOP_WIDTH = 5,
     parameter TYPE_WIDTH = 3,
-    parameter DTYPE_WIDTH = 2,
+    parameter DTYPE_WIDTH = 3,
     parameter BRANCH_TYPE_WIDTH = 3,
     parameter ALUSELECT_WIDTH = 2,
     parameter DATA_WIDTH = 32
@@ -31,7 +31,20 @@ module decoder #(
 
         
 );
-    // Instruction Types
+    //ALUSelect
+    `define SEL_CORDIC  2'b11
+    `define SEL_FALU    2'b10
+    `define SEL_IALU    2'b01
+    `define SEL_NONE    2'b00
+
+    // Defining the different DTYPES
+    `define BYTE               3'b000
+    `define HALF_WORD          3'b001
+    `define FULL_WORD          3'b010
+    `define BYTE_UNSIGNED      3'b011
+    `define HALF_WORD_UNSIGNED 3'b100
+
+    // Instruction Types (rawType)
     `define R_TYPE 3'b000
     `define I_TYPE 3'b001
     `define S_TYPE 3'b010
@@ -71,6 +84,9 @@ module decoder #(
     `define ALU_REMU                                5'd18
 
     //opcodes and funct3 and funct7
+    //--------------------------------------------------------------------
+    //BEGIN of RV32I
+    //--------------------------------------------------------------------
     `define LUI                         7'b0110111
     `define AUIPC                       7'b0010111
     `define JAL                         7'b1101111
@@ -133,8 +149,32 @@ module decoder #(
     `define funct3_OR        3'b110
     `define funct3_AND       3'b111
 
-    wire [6:0] opcode;
+    //--------------------------------------------------------------------
+    //END of RV32I
+    //--------------------------------------------------------------------
+    //--------------------------------------------------------------------
+    //BEGIN of RV32M
+    //--------------------------------------------------------------------
 
+    
+
+
+    //--------------------------------------------------------------------
+    //END of RV32M
+    //--------------------------------------------------------------------
+    //--------------------------------------------------------------------
+    //BEGIN of RV32F
+    //--------------------------------------------------------------------
+
+
+
+
+    //--------------------------------------------------------------------
+    //END of RV32F
+    //--------------------------------------------------------------------
+
+    wire [6:0] opcode;
+    reg [2:0] funct3 = '0;
     assign opcode = instr[6:0];
     
 
@@ -142,9 +182,89 @@ module decoder #(
     always @(instr)
     begin 
         case (opcode)
-            
+            `LUI: begin     //load 
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= ;
+                rawType     <= '0;
+                branchType  <= '0;
+                dType       <= '0;                
+                MWE         <= '0;
+                RWE         <= '1;                
+                jump        <= '0;
+                load        <= '1;
+            end
+            `AUIPC: begin
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= ;
+                rawType     <= '0;
+                branchType  <= '0;
+                dType       <= '0;                
+                MWE         <= '0;
+                RWE         <= '0;                
+                jump        <= '0;
+                load        <= '0;
+            end
+            `JAL: begin
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= ;
+                rawType     <= '0;
+                branchType  <= '0;
+                dType       <= '0;                
+                MWE         <= '0;
+                RWE         <= '0;                
+                jump        <= '1;
+                load        <= '0;
+            end
+            `JALR: begin
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= ;
+                rawType     <= '0;
+                branchType  <= '0;
+                dType       <= '0;                
+                MWE         <= '0;
+                RWE         <= '0;                
+                jump        <= '1;
+                load        <= '0;
+            end
+            `op_BranchGeneral: begin
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= ;
+                rawType     <= '0;
+                
+                dType       <= '0;                
+                MWE         <= '0;
+                RWE         <= '0;                
+                jump        <= '0;
+                load        <= '0;
+                
+                funct3 = instr[14:12];
+                case (funct3)
+                `funct3_BEQ: begin
+                    branchType  <= BEQ;
+                end
+                `funct3_BNE: begin
+                    branchType  <= BNE;
+                end
+                endcase
+            end
 
-            default: 
+
+
+
+
+
+
+            default: begin
+                ALUOp <= `ALU_NONE;
+                ALUSelect <= '0;
+                rawType <= `R_TYPE;
+                branchType <= BEQ;
+                dType <= '0;                
+                MWE <= '0;
+                RWE <= '0;                
+                jump <= '0;
+                load <= '0;
+            end
         endcase
     end
 endmodule;
