@@ -1,4 +1,4 @@
-import riscv_instr::*;
+`include "riscv_instr.sv"
 
 module decoder #(
     // Parameters
@@ -7,7 +7,11 @@ module decoder #(
     parameter DTYPE_WIDTH = 3,
     parameter BRANCH_TYPE_WIDTH = 3,
     parameter ALUSELECT_WIDTH = 2,
-    parameter DATA_WIDTH = 32
+    parameter DATA_WIDTH = 32,
+    
+    parameter OPCODE_WIDTH = 7,
+    parameter FUNCT3_WIDTH = 3,
+    parameter FUNCT7_WIDTH = 7
 )(
     // Ports
     input wire [DATA_WIDTH-1:0] instr,      //Current Full Instruction from ROM
@@ -21,7 +25,8 @@ module decoder #(
     output reg RWE,                                 // WE for register file
     output reg [BRANCH_TYPE_WIDTH-1:0] branchType,   // Branch unit
     output reg jump,                                // muxes for PC and register file data_in 
-    output reg [ALUSELECT_WIDTH-1:0] ALUSelect      // mux the output of IALU, FALU, and CORDIC
+    output reg [ALUSELECT_WIDTH-1:0] ALUSelect,      // mux the output of IALU, FALU, and CORDIC
+    output reg auipcBit                              //just for auipc instruction
 
         //note: ALUSelect[1] will be appended in front of the rs1, rs2, rd, and dataIn 
         //for the register file that has 32 registers for integer and 32 registers for float
@@ -84,159 +89,289 @@ module decoder #(
     `define ALU_DIVU                                5'd16
     `define ALU_REM                                 5'd17
     `define ALU_REMU                                5'd18
+    
+    `define FALU_ADD            5'd0
+    `define FALU_SUB            5'd1
+    `define FALU_MUL            5'd2
+    `define FALU_DIV            5'd3
+    `define FALU_SQRT           5'd4
+    `define FALU_SGNJ           5'd5
+    `define FALU_SGNJN          5'd6
+    `define FALU_SGNJX          5'd7
+    `define FALU_MIN            5'd8
+    `define FALU_MAX            5'd9
+    `define FALU_EQ             5'd10
+    `define FALU_LT             5'd11
+    `define FALU_LE             5'd12
 
     //opcodes and funct3 and funct7
     //--------------------------------------------------------------------
     //BEGIN of RV32I
     //--------------------------------------------------------------------
-    `define LUI                         7'b0110111
-    `define AUIPC                       7'b0010111
-    `define JAL                         7'b1101111
-    `define JALR                        7'b1100111
+//    `define LUI                         7'b0110111
+//    `define AUIPC                       7'b0010111
+//    `define JAL                         7'b1101111
+//    `define JALR                        7'b1100111
 
-    `define op_BranchGeneral            7'b1100011
-    `define funct3_BEQ  3'b000
-    `define funct3_BNE  3'b001
-    `define funct3_BLT  3'b100
-    `define funct3_BGE  3'b101
-    `define funct3_BLTU 3'b110
-    `define funct3_BGEU 3'b111
+//    `define op_BranchGeneral            7'b1100011
+//    `define funct3_BEQ  3'b000
+//    `define funct3_BNE  3'b001
+//    `define funct3_BLT  3'b100
+//    `define funct3_BGE  3'b101
+//    `define funct3_BLTU 3'b110
+//    `define funct3_BG   EU 3'b111
 
-    `define op_load                     7'b0000011
-    `define funct3_LB 3'b000
-    `define funct3_LH 3'b001
-    `define funct3_LW 3'b010
-    `define funct3_LBU 3'b100
-    `define funct3_LHU 3'b101
+//    `define op_load                     7'b0000011
+//    `define funct3_LB 3'b000
+//    `define funct3_LH 3'b001
+//    `define funct3_LW 3'b010
+//    `define funct3_LBU 3'b100
+//    `define funct3_LHU 3'b101
     
 
-    `define op_store                    7'b0100011
-    `define funct3_SB 3'b000
-    `define funct3_SH 3'b001
-    `define funct3_SW 3'b010
+//    `define op_store                    7'b0100011
+//    `define funct3_SB 3'b000
+//    `define funct3_SH 3'b001
+//    `define funct3_SW 3'b010
     
 
-    `define op_basicImmediateOps        7'b0010011
-    `define funct3_ADDI      3'b000
-    `define funct3_SLTI      3'b010
-    `define funct3_SLTIU     3'b011
-    `define funct3_XORI      3'b100
-    `define funct3_ORI       3'b110
-    `define funct3_ANDI      3'b111
+//    `define op_basicImmediateOps        7'b0010011
+//    `define funct3_ADDI      3'b000
+//    `define funct3_SLTI      3'b010
+//    `define funct3_SLTIU     3'b011
+//    `define funct3_XORI      3'b100
+//    `define funct3_ORI       3'b110
+//    `define funct3_ANDI      3'b111
 
-    `define funct3_SLLI      3'b001
+//    `define funct3_SLLI      3'b001
     
-    `define funct3_SRLI      3'b101
-    `define funct7_SRLI      7'b0000000
+//    `define funct3_SRLI      3'b101
+//    `define funct7_SRLI      7'b0000000
 
-    `define funct3_SRAI      3'b101
-    `define funct7_SRAI      7'b0100000
+//    `define funct3_SRAI      3'b101
+//    `define funct7_SRAI      7'b0100000
 
 
-    `define op_basicOps                 7'b0110011
-    `define funct3_ADD       3'b000
+//    `define op_basicOps                 7'b0110011
+//    `define funct3_ADD       3'b000
     
-    `define funct3_SUB       3'b000
-    `define funct7_SUB       7'b0100000
+//    `define funct3_SUB       3'b000
+//    `define funct7_SUB       7'b0100000
 
-    `define funct3_SLL       3'b001
-    `define funct3_SLT       3'b010
-    `define funct3_SLTU      3'b011
-    `define funct3_XOR       3'b100
-    `define funct3_SRL       3'b101
+//    `define funct3_SLL       3'b001
+//    `define funct3_SLT       3'b010
+//    `define funct3_SLTU      3'b011
+//    `define funct3_XOR       3'b100
+//    `define funct3_SRL       3'b101
     
-    `define funct3_SRA       3'b101
-    `define funct7_SRA       7'b0100000
+//    `define funct3_SRA       3'b101
+//    `define funct7_SRA       7'b0100000
 
-    `define funct3_OR        3'b110
-    `define funct3_AND       3'b111
+//    `define funct3_OR        3'b110
+//    `define funct3_AND       3'b111
 
     //--------------------------------------------------------------------
     //END of RV32I
     //--------------------------------------------------------------------
     
+    /*
+        support all M instructions
+        support all F instructions except for 4 
+    */
 
-    wire [6:0] opcode;
-    reg [2:0] funct3 = '0;
-    assign opcode = instr[6:0];
+    
+    
+
+    wire [OPCODE_WIDTH-1:0] opcode;
+    reg [FUNCT3_WIDTH-1:0] funct3 = '0;
+    reg [FUNCT7_WIDTH-1:0] funct7 = '0;
+    assign opcode = instr[OPCODE_WIDTH-1:0];
     
 
     //determine instruction type
     always @(instr)
     begin 
         case (opcode)
-            `LUI: begin     //load 
-                ALUOp       <= `ALU_NONE;
-                ALUSelect   <= ;
-                rawType     <= '0;
-                branchType  <= '0;
-                dType       <= '0;                
-                MWE         <= '0;
-                RWE         <= '1;                
-                jump        <= '0;
-                load        <= '1;
+            LUI[OPCODE_WIDTH-1:0]: begin     //load 
+                ALUOp       <= `ALU_NONE;  
+                ALUSelect   <= `SEL_IALU;              
+                branchType  <= '0;          //branching?
+                dType       <= '0;          //write to LSU? -> data type?               
+                MWE         <= '0;          //write to LSU? 
+                RWE         <= '1;          //write to reg file?               
+                jump        <= '0;          //jumping?
+                load        <= '0;          //take data from LSU?
+                auipcBit    <= '0;          
+                rawType     <= `U_TYPE;     
             end
-            `AUIPC: begin
-                ALUOp       <= `ALU_NONE;
-                ALUSelect   <= ;
-                rawType     <= '0;
-                branchType  <= '0;
-                dType       <= '0;                
-                MWE         <= '0;
-                RWE         <= '0;                
-                jump        <= '0;
-                load        <= '0;
+            AUIPC[OPCODE_WIDTH-1:0]: begin
+                ALUOp       <= `ALU_ADD;  
+                ALUSelect   <= `SEL_IALU;                              
+                dType       <= '0;  //write to LSU? -> data type?               
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;  //branching?
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '1;
+                rawType     <= `U_TYPE;
             end
-            `JAL: begin
-                ALUOp       <= `ALU_NONE;
-                ALUSelect   <= ;
-                rawType     <= '0;
-                branchType  <= '0;
-                dType       <= '0;                
-                MWE         <= '0;
-                RWE         <= '0;                
-                jump        <= '1;
-                load        <= '0;
-            end
-            `JALR: begin
-                ALUOp       <= `ALU_NONE;
-                ALUSelect   <= ;
-                rawType     <= '0;
-                branchType  <= '0;
-                dType       <= '0;                
-                MWE         <= '0;
-                RWE         <= '0;                
-                jump        <= '1;
-                load        <= '0;
-            end
-            `op_BranchGeneral: begin
-                ALUOp       <= `ALU_NONE;
-                ALUSelect   <= ;
-                rawType     <= '0;
-                
-                dType       <= '0;                
-                MWE         <= '0;
-                RWE         <= '0;                
-                jump        <= '0;
-                load        <= '0;
-                
-                funct3 = instr[14:12];
+            ADDI[OPCODE_WIDTH-1:0]: begin  //generic
+                 
+                ALUSelect   <= `SEL_IALU;                              
+                dType       <= '0;  //write to LSU? -> data type?               
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;  //branching?
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `I_TYPE;
+
+                funct3 = instr[FUNCT3_WIDTH+12:12];
+                funct7 = instr[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH];
                 case (funct3)
-                `funct3_BEQ: begin
-                    branchType  <= BEQ;
-                end
-                `funct3_BNE: begin
-                    branchType  <= BNE;
+                ADDI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_ADD;                    
+                SLTI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
+                SLTIU[FUNCT3_WIDTH+12:12]:  ALUOp <= `ALU_LESS_THAN;
+                XORI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_XOR;
+                ORI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_OR;
+                ANDI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_AND;
+                SLLI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_SHIFTL;
+                
+                SRLI[FUNCT3_WIDTH+12:12]:   
+                //SRAI[FUNCT3_WIDTH+12:12]:   
+                begin 
+                    case(funct7)
+                        SRLI[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
+                        SRAI[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
+                    endcase
                 end
                 endcase
             end
+            ADD[OPCODE_WIDTH-1:0]: begin  //generic
+                 
+                ALUSelect   <= `SEL_IALU;                              
+                dType       <= '0;  //write to LSU? -> data type?               
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;  //branching?
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `R_TYPE;
 
+                funct3 = instr[FUNCT3_WIDTH-1+12:12];
+                funct7 = instr[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH];
+                case (funct3)
+                ADD[FUNCT3_WIDTH+12:12]:   
+                //SUB[FUNCT3_WIDTH+12:12]: 
+                begin 
+                    case(funct7)
+                        ADD[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_ADD;  
+                        SUB[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SUB;
+                    endcase
+                end                
+                SLT[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
+                SLTU[FUNCT3_WIDTH+12:12]:  ALUOp <= `ALU_LESS_THAN;
+                XOR[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_XOR;
+                OR[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_OR;
+                AND[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_AND;
+                SLL[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_SHIFTL;
+                SRL[FUNCT3_WIDTH+12:12]:   //both instructions have the same funct3
+                //SRA[FUNCT3_WIDTH+12:12]:   
+                begin
+                    case(funct7)                         
+                        SRL[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
+                        SRA[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
+                    endcase
+                end
+                endcase
+            end
+            LB[OPCODE_WIDTH-1:0]: begin  //generic
+                ALUOp       <= `ALU_ADD;
+                ALUSelect   <= `SEL_IALU;                              
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;  //branching?
+                load        <= '1;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `I_TYPE;
 
+                funct3 = instr[FUNCT3_WIDTH+12:12];
+                case(funct3)
+                LB[FUNCT3_WIDTH+12:12]: dType <= `BYTE;  
+                LH[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD;
+                LW[FUNCT3_WIDTH+12:12]: dType <= `FULL_WORD;
+                LBU[FUNCT3_WIDTH+12:12]: dType <= `BYTE_UNSIGNED;
+                LHU[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD_UNSIGNED;
+                endcase
+            end
+            SB[OPCODE_WIDTH-1:0]: begin  //generic
+                ALUOp       <= `ALU_ADD;
+                ALUSelect   <= `SEL_IALU;                              
+                MWE         <= '1;  //write to LSU? 
+                RWE         <= '0;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;  //branching?
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `S_TYPE;
 
+                funct3 = instr[FUNCT3_WIDTH+12:12];
+                case(funct3)
+                SB[FUNCT3_WIDTH+12:12]: dType <= `BYTE;  
+                SH[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD;
+                SW[FUNCT3_WIDTH+12:12]: dType <= `FULL_WORD;
+                endcase
+            end
+            BEQ[OPCODE_WIDTH-1:0]: begin  //generic
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= `SEL_NONE;    
+                dType       <= '0;                          
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '0;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `B_TYPE;
 
-
-
-
+                funct3 = instr[FUNCT3_WIDTH+12:12];
+                case(funct3)
+                BEQ[FUNCT3_WIDTH+12:12]: branchType  <= `BEQ;
+                BNE[FUNCT3_WIDTH+12:12]: branchType  <= `BNE;
+                BLT[FUNCT3_WIDTH+12:12]: branchType  <= `BLT;
+                BGE[FUNCT3_WIDTH+12:12]: branchType  <= `BGE;
+                BLTU[FUNCT3_WIDTH+12:12]: branchType  <= `BLTU;
+                BGEU[FUNCT3_WIDTH+12:12]: branchType  <= `BGEU;
+                endcase    
+            end
+            JAL[OPCODE_WIDTH-1:0]: begin
+                ALUOp       <= `ALU_NONE;
+                ALUSelect   <= `SEL_NONE;    
+                dType       <= '0;                          
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '1;  //jumping?
+                branchType  <= '0;
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `J_TYPE;
+            end
+            JALR[OPCODE_WIDTH-1:0]: begin
+                ALUOp       <= `ALU_ADD;
+                ALUSelect   <= `SEL_IALU;    
+                dType       <= '0;                          
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '1;  //jumping?
+                branchType  <= '0;
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `I_TYPE;
+            end
             default: begin
                 ALUOp <= `ALU_NONE;
                 ALUSelect <= '0;
@@ -247,6 +382,7 @@ module decoder #(
                 RWE <= '0;                
                 jump <= '0;
                 load <= '0;
+                auipcBit    <= '0;
             end
         endcase
     end
