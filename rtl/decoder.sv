@@ -386,4 +386,4 @@ module decoder #(
             end
         endcase
     end
-endmodule;
+endmodule

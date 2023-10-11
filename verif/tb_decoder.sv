@@ -7,4 +7,4 @@ module tb_decoder #(
     begin 
         // Logic definition
     end
-endmodule;
+endmodule
