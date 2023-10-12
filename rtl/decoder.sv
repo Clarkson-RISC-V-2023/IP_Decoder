@@ -1,5 +1,3 @@
-`include "riscv_instr.sv"
-
 module decoder #(
     // Parameters
     parameter ALUOP_WIDTH = 5,
@@ -38,6 +36,7 @@ module decoder #(
 
         
 );
+    import riscv_instr::*;
     //ALUSelect
     `define SEL_CORDIC  2'b11
     `define SEL_FALU    2'b10
