@@ -1,3 +1,4 @@
+`include "../params/riscv_instr.sv"
 module decoder #(
     // Parameters
     parameter ALUOP_WIDTH = 5,
@@ -36,7 +37,7 @@ module decoder #(
 
         
 );
-    import riscv_instr::*;
+    //import riscv_instr::*;
     //ALUSelect
     `define SEL_CORDIC  2'b11
     `define SEL_FALU    2'b10
@@ -103,89 +104,13 @@ module decoder #(
     `define FALU_LT             5'd11
     `define FALU_LE             5'd12
 
-    //opcodes and funct3 and funct7
-    //--------------------------------------------------------------------
-    //BEGIN of RV32I
-    //--------------------------------------------------------------------
-//    `define LUI                         7'b0110111
-//    `define AUIPC                       7'b0010111
-//    `define JAL                         7'b1101111
-//    `define JALR                        7'b1100111
-
-//    `define op_BranchGeneral            7'b1100011
-//    `define funct3_BEQ  3'b000
-//    `define funct3_BNE  3'b001
-//    `define funct3_BLT  3'b100
-//    `define funct3_BGE  3'b101
-//    `define funct3_BLTU 3'b110
-//    `define funct3_BG   EU 3'b111
-
-//    `define op_load                     7'b0000011
-//    `define funct3_LB 3'b000
-//    `define funct3_LH 3'b001
-//    `define funct3_LW 3'b010
-//    `define funct3_LBU 3'b100
-//    `define funct3_LHU 3'b101
-    
-
-//    `define op_store                    7'b0100011
-//    `define funct3_SB 3'b000
-//    `define funct3_SH 3'b001
-//    `define funct3_SW 3'b010
-    
-
-//    `define op_basicImmediateOps        7'b0010011
-//    `define funct3_ADDI      3'b000
-//    `define funct3_SLTI      3'b010
-//    `define funct3_SLTIU     3'b011
-//    `define funct3_XORI      3'b100
-//    `define funct3_ORI       3'b110
-//    `define funct3_ANDI      3'b111
-
-//    `define funct3_SLLI      3'b001
-    
-//    `define funct3_SRLI      3'b101
-//    `define funct7_SRLI      7'b0000000
-
-//    `define funct3_SRAI      3'b101
-//    `define funct7_SRAI      7'b0100000
-
-
-//    `define op_basicOps                 7'b0110011
-//    `define funct3_ADD       3'b000
-    
-//    `define funct3_SUB       3'b000
-//    `define funct7_SUB       7'b0100000
-
-//    `define funct3_SLL       3'b001
-//    `define funct3_SLT       3'b010
-//    `define funct3_SLTU      3'b011
-//    `define funct3_XOR       3'b100
-//    `define funct3_SRL       3'b101
-    
-//    `define funct3_SRA       3'b101
-//    `define funct7_SRA       7'b0100000
-
-//    `define funct3_OR        3'b110
-//    `define funct3_AND       3'b111
-
-    //--------------------------------------------------------------------
-    //END of RV32I
-    //--------------------------------------------------------------------
-    
-    /*
-        support all M instructions
-        support all F instructions except for 4 
-    */
-
-    
-    
 
     wire [OPCODE_WIDTH-1:0] opcode;
-    reg [FUNCT3_WIDTH-1:0] funct3 = '0;
-    reg [FUNCT7_WIDTH-1:0] funct7 = '0;
+    wire [FUNCT3_WIDTH-1:0] funct3;
+    wire [FUNCT7_WIDTH-1:0] funct7;
     assign opcode = instr[OPCODE_WIDTH-1:0];
-    
+    assign funct3 = instr[FUNCT3_WIDTH-1+12:12];
+    assign funct7 = instr[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH];
 
     //determine instruction type
     always @(instr)
@@ -227,25 +152,23 @@ module decoder #(
                 auipcBit    <= '0;
                 rawType     <= `I_TYPE;
 
-                funct3 = instr[FUNCT3_WIDTH+12:12];
-                funct7 = instr[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH];
                 case (funct3)
-                ADDI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_ADD;                    
-                SLTI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
-                SLTIU[FUNCT3_WIDTH+12:12]:  ALUOp <= `ALU_LESS_THAN;
-                XORI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_XOR;
-                ORI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_OR;
-                ANDI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_AND;
-                SLLI[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_SHIFTL;
-                
-                SRLI[FUNCT3_WIDTH+12:12]:   
-                //SRAI[FUNCT3_WIDTH+12:12]:   
+                ADDI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_ADD;                    
+                SLTI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
+                SLTIU[FUNCT3_WIDTH+11:12]:  ALUOp <= `ALU_LESS_THAN;
+                XORI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_XOR;
+                ORI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_OR;
+                ANDI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_AND;
+                SLLI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_SHIFTL;
+                SRLI[FUNCT3_WIDTH+11:12]:     
                 begin 
                     case(funct7)
                         SRLI[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
                         SRAI[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
+                        default: ALUOp <= `ALU_NONE;
                     endcase
                 end
+                default: ALUOp <= `ALU_NONE;
                 endcase
             end
             ADD[OPCODE_WIDTH-1:0]: begin  //generic
@@ -260,31 +183,30 @@ module decoder #(
                 auipcBit    <= '0;
                 rawType     <= `R_TYPE;
 
-                funct3 = instr[FUNCT3_WIDTH-1+12:12];
-                funct7 = instr[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH];
                 case (funct3)
-                ADD[FUNCT3_WIDTH+12:12]:   
-                //SUB[FUNCT3_WIDTH+12:12]: 
+                ADD[FUNCT3_WIDTH+11:12]:   
                 begin 
                     case(funct7)
                         ADD[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_ADD;  
                         SUB[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SUB;
+                        default: ALUOp <= `ALU_NONE;
                     endcase
                 end                
-                SLT[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
-                SLTU[FUNCT3_WIDTH+12:12]:  ALUOp <= `ALU_LESS_THAN;
-                XOR[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_XOR;
-                OR[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_OR;
-                AND[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_AND;
-                SLL[FUNCT3_WIDTH+12:12]:   ALUOp <= `ALU_SHIFTL;
-                SRL[FUNCT3_WIDTH+12:12]:   //both instructions have the same funct3
-                //SRA[FUNCT3_WIDTH+12:12]:   
+                SLT[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
+                SLTU[FUNCT3_WIDTH+11:12]:  ALUOp <= `ALU_LESS_THAN;
+                XOR[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_XOR;
+                OR[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_OR;
+                AND[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_AND;
+                SLL[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_SHIFTL;
+                SRL[FUNCT3_WIDTH+11:12]:   //both instructions have the same funct3  
                 begin
                     case(funct7)                         
                         SRL[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
                         SRA[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
+                        default: ALUOp <= `ALU_NONE;
                     endcase
                 end
+                default: ALUOp <= `ALU_NONE;
                 endcase
             end
             LB[OPCODE_WIDTH-1:0]: begin  //generic
@@ -298,13 +220,12 @@ module decoder #(
                 auipcBit    <= '0;
                 rawType     <= `I_TYPE;
 
-                funct3 = instr[FUNCT3_WIDTH+12:12];
                 case(funct3)
-                LB[FUNCT3_WIDTH+12:12]: dType <= `BYTE;  
-                LH[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD;
-                LW[FUNCT3_WIDTH+12:12]: dType <= `FULL_WORD;
-                LBU[FUNCT3_WIDTH+12:12]: dType <= `BYTE_UNSIGNED;
-                LHU[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD_UNSIGNED;
+                LB[FUNCT3_WIDTH+11:12]: dType <= `BYTE;  
+                LH[FUNCT3_WIDTH+11:12]: dType <= `HALF_WORD;
+                LW[FUNCT3_WIDTH+11:12]: dType <= `FULL_WORD;
+                LBU[FUNCT3_WIDTH+11:12]: dType <= `BYTE_UNSIGNED;
+                LHU[FUNCT3_WIDTH+11:12]: dType <= `HALF_WORD_UNSIGNED;
                 endcase
             end
             SB[OPCODE_WIDTH-1:0]: begin  //generic
@@ -318,11 +239,10 @@ module decoder #(
                 auipcBit    <= '0;
                 rawType     <= `S_TYPE;
 
-                funct3 = instr[FUNCT3_WIDTH+12:12];
                 case(funct3)
-                SB[FUNCT3_WIDTH+12:12]: dType <= `BYTE;  
-                SH[FUNCT3_WIDTH+12:12]: dType <= `HALF_WORD;
-                SW[FUNCT3_WIDTH+12:12]: dType <= `FULL_WORD;
+                SB[FUNCT3_WIDTH+11:12]: dType <= `BYTE;  
+                SH[FUNCT3_WIDTH+11:12]: dType <= `HALF_WORD;
+                SW[FUNCT3_WIDTH+11:12]: dType <= `FULL_WORD;
                 endcase
             end
             BEQ[OPCODE_WIDTH-1:0]: begin  //generic
@@ -337,14 +257,13 @@ module decoder #(
                 auipcBit    <= '0;
                 rawType     <= `B_TYPE;
 
-                funct3 = instr[FUNCT3_WIDTH+12:12];
                 case(funct3)
-                BEQ[FUNCT3_WIDTH+12:12]: branchType  <= `BEQ;
-                BNE[FUNCT3_WIDTH+12:12]: branchType  <= `BNE;
-                BLT[FUNCT3_WIDTH+12:12]: branchType  <= `BLT;
-                BGE[FUNCT3_WIDTH+12:12]: branchType  <= `BGE;
-                BLTU[FUNCT3_WIDTH+12:12]: branchType  <= `BLTU;
-                BGEU[FUNCT3_WIDTH+12:12]: branchType  <= `BGEU;
+                BEQ[FUNCT3_WIDTH+11:12]: branchType  <= `BEQ;
+                BNE[FUNCT3_WIDTH+11:12]: branchType  <= `BNE;
+                BLT[FUNCT3_WIDTH+11:12]: branchType  <= `BLT;
+                BGE[FUNCT3_WIDTH+11:12]: branchType  <= `BGE;
+                BLTU[FUNCT3_WIDTH+11:12]: branchType  <= `BLTU;
+                BGEU[FUNCT3_WIDTH+11:12]: branchType  <= `BGEU;
                 endcase    
             end
             JAL[OPCODE_WIDTH-1:0]: begin
