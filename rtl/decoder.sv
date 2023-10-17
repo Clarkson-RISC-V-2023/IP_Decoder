@@ -10,7 +10,10 @@ module decoder #(
     
     parameter OPCODE_WIDTH = 7,
     parameter FUNCT3_WIDTH = 3,
-    parameter FUNCT7_WIDTH = 7
+    parameter FUNCT7_WIDTH = 7,
+    parameter FUNCT3_RIGHT = 12,
+    parameter FUNCT3_LEFT = FUNCT3_WIDTH-1+FUNCT3_RIGHT
+
 )(
     // Ports
     input wire [DATA_WIDTH-1:0] instr,      //Current Full Instruction from ROM
@@ -25,7 +28,8 @@ module decoder #(
     output reg [BRANCH_TYPE_WIDTH-1:0] branchType,   // Branch unit
     output reg jump,                                // muxes for PC and register file data_in 
     output reg [ALUSELECT_WIDTH-1:0] ALUSelect,      // mux the output of IALU, FALU, and CORDIC
-    output reg auipcBit                              //just for auipc instruction
+    output reg auipcBit,                              //just for auipc instruction
+    output reg f_rd            //change designation register to be float or integer                                   
 
         //note: ALUSelect[1] will be appended in front of the rs1, rs2, rd, and dataIn 
         //for the register file that has 32 registers for integer and 32 registers for float
@@ -192,7 +196,18 @@ module decoder #(
                         default: ALUOp <= `ALU_NONE;
                     endcase
                 end                
-                SLT[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_LESS_THAN_SIGNED;                
+                
+                
+                
+                
+                
+                SLT[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_LESS_THAN_SIGNED;   
+
+
+
+
+
+
                 SLTU[FUNCT3_WIDTH+11:12]:  ALUOp <= `ALU_LESS_THAN;
                 XOR[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_XOR;
                 OR[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_OR;
@@ -289,6 +304,83 @@ module decoder #(
                 load        <= '0;  //take data from LSU?
                 auipcBit    <= '0;
                 rawType     <= `I_TYPE;
+            end
+            FLW[OPCODE_WIDTH-1:0]: begin
+                ALUOp       <= `FALU_ADD;
+                ALUSelect   <= `SEL_FALU;    
+                dType       <= '0;                          
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;
+                load        <= '1;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `I_TYPE;
+            end
+            FSW[OPCODE_WIDTH-1:0]: begin
+                ALUOp       <= `FALU_ADD;
+                ALUSelect   <= `SEL_FALU;    
+                dType       <= `FULL_WORD;                          
+                MWE         <= '1;  //write to LSU? 
+                RWE         <= '0;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `S_TYPE;
+            end
+            FADD_S[OPCODE_WIDTH-1:0]: begin //generic
+
+                ALUSelect   <= `SEL_FALU;    
+                dType       <= '0;                          
+                MWE         <= '0;  //write to LSU? 
+                RWE         <= '1;  //write to reg file?               
+                jump        <= '0;  //jumping?
+                branchType  <= '0;
+                load        <= '0;  //take data from LSU?
+                auipcBit    <= '0;
+                rawType     <= `R_TYPE;
+                
+                case(funct7) 
+                FADD_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]:  ALUOp       <= `FALU_ADD;
+                
+                FSUB_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]:  ALUOp       <= `FALU_ADD;
+                FMUL_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]:  ALUOp       <= `FALU_ADD;
+                FDIV_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]:  ALUOp       <= `FALU_ADD;
+                
+                FSGNJ_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: begin 
+                    case(funct3)
+                    FSGNJ_S[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp       <= `FALU_ADD; 
+                    FSGNJN_S[FUNCT3_LEFT:FUNCT3_RIGHT]:  ALUOp       <= `FALU_ADD;
+                    FSGNJX_S[FUNCT3_LEFT:FUNCT3_RIGHT]:  ALUOp       <= `FALU_ADD;
+                    endcase
+                end
+                FMIN_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: begin
+                    case(funct3)
+                    FMIN_S[FUNCT3_LEFT:FUNCT3_RIGHT]:
+                    FMAX_S[FUNCT3_LEFT:FUNCT3_RIGHT]:
+                    endcase
+                end
+                FEQ_S[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: begin
+                    case(funct3)
+                    FEQ_S[FUNCT3_LEFT:FUNCT3_RIGHT]:
+                    FLT_S[FUNCT3_LEFT:FUNCT3_RIGHT]:
+                    FLE_S[FUNCT3_LEFT:FUNCT3_RIGHT]:
+                    endcase
+                end
+
+                endcase
+
+
+            //addi is only in integer domain and there is no addi in the float domain, only R-Types
+            //we need to support this at least to get float data into the float reg (integer reg to float reg)
+            //fmv_w_x
+                //this will be ALU_ADD
+                //use IALU
+                //the instruction will use the zero reg in rs2
+                //set f_rd to write to float reg
+
+
             end
             default: begin
                 ALUOp <= `ALU_NONE;
