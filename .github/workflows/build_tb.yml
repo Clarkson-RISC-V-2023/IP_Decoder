@@ -1,0 +1,47 @@
+name: Sanity test on Decoder IPs
+
+on: 
+  push: 
+    branches: 
+      - main 
+  pull_request:
+
+jobs:
+  Clone_Repo:
+    runs-on: vivado-2023
+    steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+      - name: Recursive pull 
+        shell: bash
+        run:  |
+              rm -rf * 
+              git clone git@github.com:Clarkson-RISC-V-2023/IP_Decoder.git
+              cd IP_Decoder
+              git checkout ${{ steps.extract_branch.outputs.branch }}
+              tree
+  Build-SIM_decoder:
+    runs-on: vivado-2023
+    needs: Clone_Repo
+    steps:
+      - name: memblock_sanity_check
+        shell: bash
+        run:  |
+              cd IP_Decoder 
+              make all
+  Upload_Sim_Artifact:
+    runs-on: vivado-2023
+    needs: [Build-SIM_decoder]
+    steps:
+      - name: Upload Artifact 
+        uses: actions/upload-artifact@v2
+        with:
+              name: "RTL-SIM_build"
+              path: |
+                ./IP_Decoder/out/**
+              if-no-files-found: error
+      - name: Clean
+        shell: bash
+        run: rm -rf IP_Decoder
