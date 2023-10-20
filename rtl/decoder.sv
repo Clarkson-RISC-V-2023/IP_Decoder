@@ -14,6 +14,7 @@ module decoder #(
     parameter FUNCT3_RIGHT = 12,
     parameter FUNCT3_LEFT = FUNCT3_WIDTH-1+FUNCT3_RIGHT
 
+
 )(
     // Ports
     input wire [DATA_WIDTH-1:0] instr,      //Current Full Instruction from ROM
@@ -137,6 +138,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
             end
             AUIPC[OPCODE_WIDTH-1:0]: begin
                 ALUOp       <= `ALU_ADD;  
@@ -152,6 +154,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
             end
             ADDI[OPCODE_WIDTH-1:0]: begin  //generic
                  
@@ -167,6 +170,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
 
                 case (funct3)
                 ADDI[FUNCT3_WIDTH+11:12]:   ALUOp <= `ALU_ADD;                    
@@ -202,6 +206,7 @@ module decoder #(
                 f_d1        <= '0;
                 f_d2        <= '0;
 
+
                 case (funct3)
                 ADD[FUNCT3_WIDTH+11:12]:   
                 begin 
@@ -211,12 +216,11 @@ module decoder #(
                         default: ALUOp <= `ALU_NONE;
                     endcase
                 end                
-                
-                
-                
+               
                 
                 //this syntax does work, copy everywhere please
                 SLT[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_LESS_THAN_SIGNED;   
+
 
 
 
@@ -253,6 +257,7 @@ module decoder #(
                 f_d1        <= '0;
                 f_d2        <= '0;
 
+
                 case(funct3)
                 LB[FUNCT3_WIDTH+11:12]: dType <= `BYTE;  
                 LH[FUNCT3_WIDTH+11:12]: dType <= `HALF_WORD;
@@ -275,6 +280,7 @@ module decoder #(
                 f_d1        <= '0;
                 f_d2        <= '0;
 
+
                 case(funct3)
                 SB[FUNCT3_WIDTH+11:12]: dType <= `BYTE;  
                 SH[FUNCT3_WIDTH+11:12]: dType <= `HALF_WORD;
@@ -295,6 +301,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
 
                 case(funct3)
                 BEQ[FUNCT3_WIDTH+11:12]: branchType  <= `BEQ;
@@ -319,6 +326,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
             end
             JALR[OPCODE_WIDTH-1:0]: begin
                 ALUOp       <= `ALU_ADD;
@@ -435,12 +443,14 @@ module decoder #(
                     ALUOp <= `FALU_ADD; //rs2 is all zero
                 end
                 endcase
+
             end
             default: begin
                 ALUOp <= `ALU_NONE;
                 ALUSelect <= '0;
                 rawType <= `R_TYPE;
                 branchType <= '0;
+
                 dType <= '0;                
                 MWE <= '0;
                 RWE <= '0;                
@@ -450,6 +460,7 @@ module decoder #(
                 f_rd        <= '0;
                 f_d1        <= '0;
                 f_d2        <= '0;
+
             end
         endcase
     end
