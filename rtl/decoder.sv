@@ -215,7 +215,7 @@ module decoder #(
                 
                 
                 
-                
+                //this syntax does work, copy everywhere please
                 SLT[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_LESS_THAN_SIGNED;   
 
 
@@ -430,6 +430,8 @@ module decoder #(
                     //set f_rd to write to float reg
                 FMV_W_X[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: begin
                     f_rd <= '1;
+                    f_d1 <= '0;     //these might be high for a very short amount of time before going low
+                    f_d2 <= '0;
                     ALUOp <= `FALU_ADD; //rs2 is all zero
                 end
                 endcase
@@ -438,7 +440,7 @@ module decoder #(
                 ALUOp <= `ALU_NONE;
                 ALUSelect <= '0;
                 rawType <= `R_TYPE;
-                branchType <= BEQ;
+                branchType <= '0;
                 dType <= '0;                
                 MWE <= '0;
                 RWE <= '0;                
