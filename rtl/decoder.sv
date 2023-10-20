@@ -430,7 +430,7 @@ module decoder #(
                     //set f_rd to write to float reg
                 FMV_W_X[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: begin
                     f_rd <= '1;
-                    ALUOp <= `FALU_;
+                    ALUOp <= `FALU_ADD; //rs2 is all zero
                 end
                 endcase
             end
