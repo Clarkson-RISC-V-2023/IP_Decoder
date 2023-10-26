@@ -78,6 +78,17 @@ decoder #(
         #100 instr <= FMV_W_X;
         
         #100 instr <= '0; //nop
+
+        #100
+        #100
+        #100
+
+        #100 instr <= ADD;
+        #100 instr <= DIV;
+        #100 instr <= ADD;
+
+
+
         #100 $finish;
     end
 endmodule
