@@ -204,31 +204,45 @@ module decoder #(
                 f_d1        <= '0;
                 f_d2        <= '0;
 
-                case (funct3)
-                ADD[FUNCT3_LEFT:FUNCT3_RIGHT]:   
-                begin 
-                    case(funct7)
-                        ADD[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_ADD;  
-                        SUB[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SUB;
-                        default: ALUOp <= `ALU_NONE;
+                if (funct7 == MUL[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]) begin
+                    case (funct3)
+                    MUL[FUNCT3_LEFT:FUNCT3_RIGHT]:      ALUOp <= `ALU_MUL;  
+                    MULH[FUNCT3_LEFT:FUNCT3_RIGHT]:     ALUOp <= `ALU_MULH;  
+                    MULHSU[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_MULHSU;  
+                    MULHU[FUNCT3_LEFT:FUNCT3_RIGHT]:    ALUOp <= `ALU_MULHU;  
+                    DIV[FUNCT3_LEFT:FUNCT3_RIGHT]:      ALUOp <= `ALU_DIV;  
+                    DIVU[FUNCT3_LEFT:FUNCT3_RIGHT]:     ALUOp <= `ALU_DIVU;  
+                    REM[FUNCT3_LEFT:FUNCT3_RIGHT]:      ALUOp <= `ALU_REM;  
+                    REMU[FUNCT3_LEFT:FUNCT3_RIGHT]:     ALUOp <= `ALU_REMU;  
                     endcase
                 end
-                SLT[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_LESS_THAN_SIGNED;   
-                SLTU[FUNCT3_LEFT:FUNCT3_RIGHT]:  ALUOp <= `ALU_LESS_THAN;
-                XOR[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_XOR;
-                OR[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_OR;
-                AND[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_AND;
-                SLL[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_SHIFTL;
-                SRL[FUNCT3_LEFT:FUNCT3_RIGHT]:   //both instructions have the same funct3  
-                begin
-                    case(funct7)                         
-                        SRL[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
-                        SRA[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
-                        default: ALUOp <= `ALU_NONE;
+                else begin
+                    case (funct3)
+                    ADD[FUNCT3_LEFT:FUNCT3_RIGHT]:   
+                    begin 
+                        case(funct7)
+                            ADD[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_ADD;  
+                            SUB[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SUB;
+                            default: ALUOp <= `ALU_NONE;
+                        endcase
+                    end
+                    SLT[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_LESS_THAN_SIGNED;   
+                    SLTU[FUNCT3_LEFT:FUNCT3_RIGHT]:  ALUOp <= `ALU_LESS_THAN;
+                    XOR[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_XOR;
+                    OR[FUNCT3_LEFT:FUNCT3_RIGHT]:    ALUOp <= `ALU_OR;
+                    AND[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_AND;
+                    SLL[FUNCT3_LEFT:FUNCT3_RIGHT]:   ALUOp <= `ALU_SHIFTL;
+                    SRL[FUNCT3_LEFT:FUNCT3_RIGHT]:   //both instructions have the same funct3  
+                    begin
+                        case(funct7)                         
+                            SRL[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR;
+                            SRA[DATA_WIDTH-1:DATA_WIDTH-FUNCT7_WIDTH]: ALUOp <= `ALU_SHIFTR_ARITH;
+                            default: ALUOp <= `ALU_NONE;
+                        endcase
+                    end
+                    default: ALUOp <= `ALU_NONE;
                     endcase
                 end
-                default: ALUOp <= `ALU_NONE;
-                endcase
             end
             LB[OPCODE_WIDTH-1:0]: begin  //generic
                 ALUOp       <= `ALU_ADD;

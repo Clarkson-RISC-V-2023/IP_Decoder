@@ -1,23 +1,25 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Fri Oct 20 18:27:01 2023
+[*] Wed Oct 25 23:21:58 2023
 [*]
 [dumpfile] "/home/nguyennt/clone/out/tb_decoder.vcd"
-[dumpfile_mtime] "Fri Oct 20 18:25:55 2023"
-[dumpfile_size] 1578
+[dumpfile_mtime] "Wed Oct 25 23:19:48 2023"
+[dumpfile_size] 1937
 [savefile] "/home/nguyennt/clone/gtk_decoder.gtkw"
-[timestart] 0
-[size] 1920 1011
-[pos] -1 -1
-*-16.000000 22900 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 774000
+[size] 987 958
+[pos] -104 -74
+*-16.000000 841600 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb_decoder.
 [sst_width] 251
-[signals_width] 219
+[signals_width] 284
 [sst_expanded] 1
-[sst_vpaned_height] 285
+[sst_vpaned_height] 532
 @28
 tb_decoder.dut_decoder.instr[31:0]
+@24
 tb_decoder.dut_decoder.ALUOp[4:0]
+@28
 tb_decoder.dut_decoder.rawType[2:0]
 tb_decoder.dut_decoder.load
 tb_decoder.dut_decoder.dType[2:0]
@@ -32,7 +34,6 @@ tb_decoder.dut_decoder.f_d1
 tb_decoder.dut_decoder.f_d2
 tb_decoder.dut_decoder.opcode[6:0]
 tb_decoder.dut_decoder.funct3[2:0]
-@29
 tb_decoder.dut_decoder.funct7[6:0]
 [pattern_trace] 1
 [pattern_trace] 0
